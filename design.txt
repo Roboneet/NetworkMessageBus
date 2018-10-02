@@ -1,0 +1,26 @@
+Network Message Bus
+====================
+
+msg type : ip addr + port no
+
+interface:
+* msgget_nmb
+* msgsnd_nmb
+* msgrcv_nmb
+
+-> driver uses nmb interface to send a message to other systems
+-> msgsnd_nmb actually sends the message to a local server using TCP on port 1111
+-> the local server then broadcasts this message to other systems on port 1112
+-> the local server that recives only the messages that are meant for it
+-> the local server that recives a message stores it until the process is ready to recieve it (i.e comes online)
+
+=> non-blocking system
+
+
+Steps:
+
+1. Make a non-blocking driver using normal message queues
+2. Implement TCPSocket to send message to local server
+3. Implement UDPSocket to broadcast messages
+4. Implement receiving mechanism on UDPSocket ( this is where it might get tricky )
+5. Sleep
