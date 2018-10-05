@@ -1,109 +1,135 @@
-#include <"utils.h">
+#include "utils.h"
+
+int put_in_msg_queue(int msgid, MsgBuf buf);
+void udp_listener(int msgid);
+int send_msg_to_udp(MsgBuf msg);
+void create_tcp(int msgq);
+void handle_tcp(int connfd, int msgq);
+int retrieve_msg_queue(int msgq, long type, MsgBuf* msgp);
 
 int main(){
-	int msqid = msgget (IPC_PRIVATE, IPC_CREAT | 0644);
+	int msgqid = msgget (IPC_PRIVATE, IPC_CREAT | 0644);
 	
-	if(fork() == 0){
-		udp_listener(msgid);
+	pid_t p = fork();
+	if(p < 0)
+		die("fork() failed");
+	else if(p == 0){
+		udp_listener(msgqid);	
 		exit(0);
 	}
-
-	create_tcp(1111);
+	create_tcp(msgqid);
+	return 0;
 }
 
-udp_listener(int msgid){
-	sock = socket(AF_INET,SOCK_DGRAM,0);
+
+int put_in_msg_queue(int msgid, MsgBuf buf){
+	return msgsnd(msgid, &(buf.mtype), sizeof(buf), 0);
+}
+
+int retrieve_msg_queue(int msgq, long type, MsgBuf* msgp){
+	return msgrcv(msgq, msgp, sizeof(MsgBuf), type, 0);
+}
+
+
+void udp_listener(int msgid){
+	int sock = socket(AF_INET,SOCK_DGRAM,0);
 	struct sockaddr_in recvaddr;
 	recvaddr.sin_family = AF_INET;
 	recvaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	recvaddr.sin_port = htons(atoi(port));
+	recvaddr.sin_port = htons(UDP_PORT);
 	bind(sock,(struct sockaddr *)&recvaddr,sizeof(recvaddr));
 
-	for (;;) { // Run forever
-	// Block until receive message from a client
-	msgbuf buf; // I/O buffer
-	// Size of received message
-	ssize_t numBytesRcvd = recv(sock, &buf, sizeof(buf), 0);
-	if (numBytesRcvd < 0)
-	  die("recv() failed");
-	// put in queue
-	put_in_msg_queue(msgid,buf);
+	for (;;) { 
+		MsgBuf buf;
+		ssize_t t = recv(sock, &buf, sizeof(buf), 0);
+		if (t < 0)
+			die("recv() failed");
+		if(t == 0){
+			break;		
+		}
+		// put in queue
+		put_in_msg_queue(msgid, buf);
 	}
-}
-
-
-send_msg_to_udp(msg){
-	sock = socket(AF_INET,SOCK_DGRAM,0);
-	struct sockaddr_in sendaddr;
-	sendaddr.sin_family = AF_INET;
-	sendaddr.sin_addr.s_addr = inet_addr(extract_ip(msg.mtype));
-	sendaddr.sin_port = htons(1112);
-	sendto(sock,msg,sizeof(msg),0,(struct sockaddr *)&sendaddr,sizeof(sendaddr));
+	close(sock);
+	return;
 }
 
 // Tcp receive from nmb client
-create_tcp(port){
+void create_tcp(int msgq){
+	int connfd, sock;
+	struct sockaddr_in listaddr, cliaddr;
+	pid_t pid;
+	unsigned int clilen;
 
 	sock = socket(AF_INET,SOCK_STREAM,0);
-	struct sockaddr_in listaddr;
-  	listaddr.sin_family = AF_INET;
+	listaddr.sin_family = AF_INET;
 	listaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	listaddr.sin_port = htons(atoi(port));
+	listaddr.sin_port = htons(TCP_PORT);
 	bind(sock,(struct sockaddr *)&listaddr,sizeof(listaddr));
-	// Blocking
 	listen(sock,5);
-	int confd;
-
-	struct sockaddr_in cliaddr
+	
 	for(;;){
 		clilen = sizeof (cliaddr);
-		
 		connfd = accept (sock, (struct sockaddr *) &cliaddr, &clilen);
-		if(confd< 0)die("accept() failed");
-		pid_t pid;
+		if(connfd< 0)die("accept() failed");
+		
 		if((pid =fork()) == 0){
 			close(sock);
-			handle_tcp(connfd);
+			handle_tcp(connfd, msgq);
 			exit(0);
 		}
 		else if (pid < 0){die("fork() failed");}
 		close(connfd);
 	}
-
+	close(sock);
 }
 
 
+int send_msg_to_udp(MsgBuf msg){
+	int sock = socket(AF_INET,SOCK_DGRAM,0);
+	struct sockaddr_in sendaddr;
+	sendaddr.sin_family = AF_INET;
+	sendaddr.sin_addr.s_addr = extract_ip(msg.mtype);
+	sendaddr.sin_port = htons(UDP_PORT);
+	return sendto(sock, &msg, sizeof(msg), 0, (struct sockaddr *)&sendaddr,sizeof(sendaddr));
+}
+
 //tcp single child connection handler
-handle_tcp(connfd){
+void handle_tcp(int connfd, int msgq){
+	TcpCall tc;
+	int t, action;
+	long type;
+	MsgBuf msg;
+
 	for(;;){
-		tcp_call tc;
-		int t = recv(connfd, &tc, sizeof(tc));
-		if(t<0)die("recv() failed");
-		if(t == 0){
-			// connection closed
-			break;
-		}
+		t = recv(connfd, &tc, sizeof(tc), 0);
 		
+		if(t < 0) die("recv() failed");
+		if(t == 0) break; // connection closed
+			
 		// messnd_nmb
-		if(tc.action == 1){
-		send_msg_to_udp(tc.msg,udp_socket);
-		}
-		// msgrcv_nmb 
-		else if(tc.action == 2){
-		 // check if msg is there
-		 while(retrieve_msg_queue(tc.msg.mtype) != 0){
-		 sleep(1);
-		 }
-		 msgbuf msg;
-		 retrieve_msg_queue(get_client_details,&msg);
-		 send(connfd,&msg,sizeof(msg), 0);
+		action = tc.action;
+		switch(action){
+			case MSGSND:
+				send_msg_to_udp(tc.msg);
+				break;
+			case MSGRCV:
+				// check if msg is there
+				type = tc.msg.mtype;
+				t = retrieve_msg_queue(msgq, type, &msg);
+				if( t < 0 ){
+					die("retrieve_msg_queue >> msgrcv() failed");
+				}
+				send(connfd,&msg,sizeof(msg), 0);
+				break;
+			default:
+				printf("wrong action type\n");
 		}
 	}
 	close (connfd);
-    exit(0);
+	exit(0);
 }
 
-// Making UDP server
 
 
 

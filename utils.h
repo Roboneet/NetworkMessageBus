@@ -3,42 +3,47 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
-
 #include <sys/socket.h> 
 #include <arpa/inet.h>  
 
-#include <string.h>     
+#include <string.h>
+#include <sys/types.h>
+#include <sys/msg.h>
 #include <unistd.h> 
 
 #define TCP_PORT 1111
+#define UDP_PORT 1112
 #define RCVBUFSIZE 32   
 
 #define MSGSND 1
 #define MSGRCV 2
-#define MSGCLS 3
 
 struct msgbuf {
     long mtype;    
     char mtext[100];  
 };
 
+typedef struct msgbuf MsgBuf;
+
 struct tcp_call{
 	int action;
 	struct msgbuf msg;
-}
+};
 
-typedef nmb_t int;
+typedef struct tcp_call TcpCall;
+typedef int nmb_t;
 
 nmb_t msgget_nmb();
-int msgsnd_nmb(nmb_t nmbid, const void *msgp, 
+int msgsnd_nmb(nmb_t nmbid, MsgBuf msg, 
 	size_t msgsz, int msgflg);
-ssize_t msgrcv_nmb(nmb_t nmbid, void *msgp,
-	size_t msgsz, long msgtyp, int msgflg);
-int msgctl_nmb(nmb_t nmbid, int cmd,
-	struct msqid_ds *buf);
+ssize_t msgrcv_nmb(nmb_t nmbid, MsgBuf* msgp,
+    size_t msgsz, long msgtyp, int msgflg);
+int msgrem_nmb(nmb_t nmbid);
 
 void die(char* str);
-struct msgbuf dummyMsg();
+MsgBuf dummyMsg();
+long get_my_mtype(int nmbid);
+int extract_ip(long type);
+long get_mtype(char* ip, char* port);
 
 #endif

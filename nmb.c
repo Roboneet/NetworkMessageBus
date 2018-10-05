@@ -1,17 +1,18 @@
-#include <"utils.h">
+#include "utils.h"
 
 void die(char* str){
     perror(str);
     exit(0);
 }
 
-struct msgbuf dummyMsg(){
-    struct msgbuf msg;
+MsgBuf dummyMsg(nmb_t nmbid){
+    MsgBuf msg;
+    msg.mtype = get_my_mtype(nmbid);
     return msg;
 }
 
-tcp_call create_tcp_call(int action, struct msgbuf msg){
-	tcp_call tc;
+TcpCall create_tcp_call(int action, MsgBuf msg){
+	TcpCall tc;
 	tc.action = action;
 	tc.msg = msg;
 	return tc;
@@ -33,16 +34,16 @@ nmb_t msgget_nmb(){
     return sock;
 }
 
-int msgsnd_nmb(nmb_t nmbid, msgbuf msg, 
+int msgsnd_nmb(nmb_t nmbid, MsgBuf msg, 
 	size_t msgsz, int msgflg){
-	tcp_call tc = create_tcp_call(MSGSND, msg);
+	TcpCall tc = create_tcp_call(MSGSND, msg);
 	send(nmbid, &tc, sizeof(tc), 0);
     return 0;
 }
 
-ssize_t msgrcv_nmb(nmb_t nmbid, msgbuf* msgp,
+ssize_t msgrcv_nmb(nmb_t nmbid, MsgBuf* msgp,
     size_t msgsz, long msgtyp, int msgflg){
-    tcp_call tc = create_tcp_call(MSGRCV, dummyMsg());
+    TcpCall tc = create_tcp_call(MSGRCV, dummyMsg(nmbid));
     
     send(nmbid, &tc, sizeof(tc), 0);
     
@@ -52,24 +53,19 @@ ssize_t msgrcv_nmb(nmb_t nmbid, msgbuf* msgp,
     *msgp = tc.msg;
     return sizeof(tc.msg);
 }
-/***
-int msgctl_nmb(nmb_t nmbid, int cmd,
-    struct msqid_ds *buf){
-    
-    if(cmd == IPC_RMID){
-        return close(nmbid);
-    }
-    
-}
-***/
+
 int msgrem_nmb(nmb_t nmbid){
-
-    // tcp_call tc = create_tcp_call(MSGCLS, dummyMsg());
-    // send(nmbid,&tc,sizeof(tc),0);
-
-    close(nmbid);  // TCP Protocol will close the connection
+    close(nmbid);
     return 0;
 }
 
+long get_my_mtype(int nmbid){
+    return 0;
+}
 
-
+int extract_ip(long type){
+    return 0;
+}
+long get_mtype(char* ip, char* port){
+    return 0;
+}

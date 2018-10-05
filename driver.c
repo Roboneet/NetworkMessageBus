@@ -1,6 +1,6 @@
-#include <"utils.h">
+#include "utils.h"
 
-enum states{SHOW_MENU, SEND, RCV, QUIT}
+enum states{SHOW_MENU, SEND, RCV, QUIT};
 
 void print_banner();
 
@@ -11,9 +11,10 @@ int main(){
 	enum states state = SHOW_MENU;
 	char *ip, *port, *text;
 	struct msgbuf msg;
+	int type;
 
 	while(1){
-		printf("     __________________     \n");
+		printf("     __________________________     \n");
 		switch(state){
 			case SHOW_MENU:
 				printf("Choose an option:\n");
@@ -30,7 +31,8 @@ int main(){
 				
 				printf("Enter message:\n");
 				scanf("%s\n", text);
-				msg = {get_mtype(ip, port), text};
+				msg.mtype = get_mtype(ip, port);
+				strcpy(msg.mtext, text);
 				printf("Sending message...\n");
 				if(msgsnd_nmb(nmbid, msg, sizeof(msg), 0) < 0){
 					die("msgsnd_nmb() failed");
@@ -47,7 +49,7 @@ int main(){
 				printf("%s\n", msg.mtext);;
 				state = SHOW_MENU;
 			case QUIT:
-				msgrem_nmb(nmb_t nmbid);
+				msgrem_nmb(nmbid);
 				printf("Bye Bye...");
 				exit(0);
 			default:
@@ -62,12 +64,12 @@ int main(){
 void print_banner(){
 	// tadaaa
 	printf("\n");
-	printf("      *  *  *   *  ***      \n");
-	printf("      *  *  *   *  * **     \n");
-	printf("      ** *  ** **  ***      \n");
-	printf("      * **  * * *  * **     \n");
-	printf("      *  *  *   *  ***      \n");
-	printf("     __________________     \n");
+	printf("      **  **   **   **   ****       \n");
+	printf("      *** **   **   **   ** **      \n");
+	printf("      ******   *** ***   ****       \n");
+	printf("      ** ***   ** * **   ** **      \n");
+	printf("      **  ** * **   ** * ****       \n");
+	printf("     __________________________     \n");
 	printf("\n");
 
 }	
