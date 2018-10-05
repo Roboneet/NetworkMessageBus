@@ -14,7 +14,7 @@ interface:
 -> the local server that recives only the messages that are meant for it
 -> the local server that recives a message stores it until the process is ready to recieve it (i.e comes online)
 
-=> non-blocking system
+=> non-blocking system?
 
 
 Steps:

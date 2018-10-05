@@ -14,10 +14,19 @@
 #define TCP_PORT 1111
 #define RCVBUFSIZE 32   
 
+#define MSGSND 1
+#define MSGRCV 2
+#define MSGCLS 3
+
 struct msgbuf {
     long mtype;    
     char mtext[1];  
 };
+
+struct tcp_call{
+	int action;
+	void* msg;
+}
 
 typedef nmb_t int;
 
