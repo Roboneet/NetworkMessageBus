@@ -5,9 +5,12 @@ void die(char* str){
     exit(0);
 }
 
+struct msgbuf dummyMsg(){
+    struct msgbuf msg;
+    return msg;
+}
 
-
-tcp_call create_tcp_call(int action, void* msg){
+tcp_call create_tcp_call(int action, struct msgbuf msg){
 	tcp_call tc;
 	tc.action = action;
 	tc.msg = msg;
@@ -18,13 +21,11 @@ nmb_t msgget_nmb(){
     int sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
     if(sock < 0)die("socket() failed");
 	
-    struct sockaddr_in servAddr; 
-    unsigned short servPort = TCP_PORT;
-    
+    struct sockaddr_in servAddr;
     memset(&servAddr, 0, sizeof(servAddr));
     servAddr.sin_family  = AF_INET;
-    servAddr.sin_addr.s_addr = inet_addr(servIP);   
-    servAddr.sin_port        = htons(servPort); 
+    servAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    servAddr.sin_port        = htons(TCP_PORT); 
     if (connect(sock, (struct sockaddr *) &servAddr,
     	sizeof(servAddr)) < 0)
         die("connect() failed");
@@ -34,13 +35,14 @@ nmb_t msgget_nmb(){
 
 int msgsnd_nmb(nmb_t nmbid, msgbuf msg, 
 	size_t msgsz, int msgflg){
-	tcp_call tc = create_tcp_call(MSGSND, &msg);
-	return send(nmbid, &tc, sizeof(tc), 0);
+	tcp_call tc = create_tcp_call(MSGSND, msg);
+	send(nmbid, &tc, sizeof(tc), 0);
+    return 0;
 }
 
 ssize_t msgrcv_nmb(nmb_t nmbid, msgbuf* msgp,
     size_t msgsz, long msgtyp, int msgflg){
-    tcp_call tc = create_tcp_call(MSGRCV, msgp);
+    tcp_call tc = create_tcp_call(MSGRCV, dummyMsg());
     
     send(nmbid, &tc, sizeof(tc), 0);
     
@@ -62,10 +64,11 @@ int msgctl_nmb(nmb_t nmbid, int cmd,
 ***/
 int msgrem_nmb(nmb_t nmbid){
 
-tcp_call tc = create_tcp_call(MSGCLS, NULL);
-send(nmbid,&tc,sizeof(tc),0);
+    // tcp_call tc = create_tcp_call(MSGCLS, dummyMsg());
+    // send(nmbid,&tc,sizeof(tc),0);
 
-return 0;
+    close(nmbid);  // TCP Protocol will close the connection
+    return 0;
 }
 
 

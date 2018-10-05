@@ -79,6 +79,10 @@ handle_tcp(connfd){
 		tcp_call tc;
 		int t = recv(connfd, &tc, sizeof(tc));
 		if(t<0)die("recv() failed");
+		if(t == 0){
+			// connection closed
+			break;
+		}
 		
 		// messnd_nmb
 		if(tc.action == 1){
@@ -94,12 +98,9 @@ handle_tcp(connfd){
 		 retrieve_msg_queue(get_client_details,&msg);
 		 send(connfd,&msg,sizeof(msg), 0);
 		}
-		
-		// If there is close call (Action :3)
-		
 	}
 	close (connfd);
-      exit(0);
+    exit(0);
 }
 
 // Making UDP server

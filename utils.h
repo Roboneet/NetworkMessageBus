@@ -20,12 +20,12 @@
 
 struct msgbuf {
     long mtype;    
-    char mtext[1];  
+    char mtext[100];  
 };
 
 struct tcp_call{
 	int action;
-	void* msg;
+	struct msgbuf msg;
 }
 
 typedef nmb_t int;
@@ -37,5 +37,8 @@ ssize_t msgrcv_nmb(nmb_t nmbid, void *msgp,
 	size_t msgsz, long msgtyp, int msgflg);
 int msgctl_nmb(nmb_t nmbid, int cmd,
 	struct msqid_ds *buf);
+
+void die(char* str);
+struct msgbuf dummyMsg();
 
 #endif
