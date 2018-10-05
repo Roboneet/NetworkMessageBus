@@ -13,13 +13,13 @@ int main(){
 	struct msgbuf msg;
 
 	while(1){
-		printf("____________________________________\n");
+		printf("     __________________     \n");
 		switch(state){
 			case SHOW_MENU:
 				printf("Choose an option:\n");
-				printf("1. Send a message\n");
-				printf("2. Read a message\n");
-				printf("3. Quit\n");
+				printf("1 Send a message\n");
+				printf("2 Read a message\n");
+				printf("3 Quit\n");
 				scanf("%d", &state);
 				break;
 			case SEND:
@@ -40,10 +40,10 @@ int main(){
 				break;
 			case RCV:
 				printf("Reading a message...\n");
-				printf("Here you go:\n");
 				if(msgrcv_nmb(nmbid, &msg, sizeof(msg), get_my_mtype(nmbid), 0) < 0){
 					die("msgsnd_nmb() failed...");
 				}
+				printf("Here you go:\n");
 				printf("%s\n", msg.mtext);;
 				state = SHOW_MENU;
 			case QUIT:
@@ -60,14 +60,14 @@ int main(){
 
 
 void print_banner(){
-	// taddaaaaa
-	printf("                                 \n");
-	printf("      *  *  *   *  ***           \n");
-	printf("      *  *  *   *  * **          \n");
-	printf("      ** *  ** **  ***           \n");
-	printf("      * **  * * *  * **          \n");
-	printf("      *  *  *   *  ***           \n");
-	printf("     __________________          \n");
-	printf("                                 \n");
+	// tadaaa
+	printf("\n");
+	printf("      *  *  *   *  ***      \n");
+	printf("      *  *  *   *  * **     \n");
+	printf("      ** *  ** **  ***      \n");
+	printf("      * **  * * *  * **     \n");
+	printf("      *  *  *   *  ***      \n");
+	printf("     __________________     \n");
+	printf("\n");
 
 }	
