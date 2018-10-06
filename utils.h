@@ -43,7 +43,9 @@ int msgrem_nmb(nmb_t nmbid);
 void die(char* str);
 MsgBuf dummyMsg();
 long get_my_mtype(int nmbid);
-int extract_ip(long type);
-long get_mtype(char* ip, char* port);
+void ip_to_string(uint32_t addr, char* str);
+long get_mtype(char* ip, int port);
+void extract(long type, uint32_t* ip, int* port);
+long get_my_mtype(int nmbid);
 
 #endif

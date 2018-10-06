@@ -59,13 +59,32 @@ int msgrem_nmb(nmb_t nmbid){
     return 0;
 }
 
-long get_my_mtype(int nmbid){
-    return 0;
+void printbits(long i){
+    while(i != 0){
+        printf("%ld", i % 2);
+        i = i/2;
+    }
+    printf("\n");
 }
 
-int extract_ip(long type){
-    return 0;
+long get_my_mtype(int nmbid){
+    struct sockaddr_in me;
+    unsigned int len = sizeof(me);
+    getsockname(nmbid, (struct sockaddr*)&me, &len);
+    long l = (long)me.sin_addr.s_addr;
+    long type = l << 16 | (long)me.sin_port;
+    return type;
 }
-long get_mtype(char* ip, char* port){
-    return 0;
+
+void extract(long type, uint32_t* ip, int* port){
+    *ip = (uint32_t)(type >> 16);
+    *port = type & 0xffff;
+}
+
+long get_mtype(char* ip, int port){
+    return (long)(inet_addr(ip)) << 16 | (long)port;
+}
+
+void ip_to_string(uint32_t addr, char* str){
+    inet_ntop(AF_INET, &(addr), str, INET_ADDRSTRLEN);
 }

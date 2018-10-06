@@ -1,10 +1,10 @@
 #include "utils.h"
 
-int put_in_msg_queue(int msgid, MsgBuf buf);
 void udp_listener(int msgid);
 int send_msg_to_udp(MsgBuf msg);
 void create_tcp(int msgq);
 void handle_tcp(int connfd, int msgq);
+int put_in_msg_queue(int msgid, MsgBuf buf);
 int retrieve_msg_queue(int msgq, long type, MsgBuf* msgp);
 
 int main(){
@@ -32,6 +32,7 @@ int retrieve_msg_queue(int msgq, long type, MsgBuf* msgp){
 
 
 void udp_listener(int msgid){
+	printf("udp_listener(%d)\n", msgid);
 	int sock = socket(AF_INET,SOCK_DGRAM,0);
 	struct sockaddr_in recvaddr;
 	recvaddr.sin_family = AF_INET;
@@ -56,6 +57,7 @@ void udp_listener(int msgid){
 
 // Tcp receive from nmb client
 void create_tcp(int msgq){
+	printf("create_tcp(%d)\n", msgq);
 	int connfd, sock;
 	struct sockaddr_in listaddr, cliaddr;
 	pid_t pid;
@@ -89,7 +91,8 @@ int send_msg_to_udp(MsgBuf msg){
 	int sock = socket(AF_INET,SOCK_DGRAM,0);
 	struct sockaddr_in sendaddr;
 	sendaddr.sin_family = AF_INET;
-	sendaddr.sin_addr.s_addr = extract_ip(msg.mtype);
+	int p;
+	extract(msg.mtype, &(sendaddr.sin_addr.s_addr), &p);
 	sendaddr.sin_port = htons(UDP_PORT);
 	return sendto(sock, &msg, sizeof(msg), 0, (struct sockaddr *)&sendaddr,sizeof(sendaddr));
 }
