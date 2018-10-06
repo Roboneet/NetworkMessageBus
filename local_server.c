@@ -9,7 +9,8 @@ int retrieve_msg_queue(int msgq, long type, MsgBuf* msgp);
 
 int main(){
 	int msgqid = msgget (IPC_PRIVATE, IPC_CREAT | 0644);
-	
+	if(msgqid < 0) die("msgget() failed");	
+
 	pid_t p = fork();
 	if(p < 0)
 		die("fork() failed");
@@ -23,11 +24,11 @@ int main(){
 
 
 int put_in_msg_queue(int msgid, MsgBuf buf){
-	return msgsnd(msgid, &(buf.mtype), sizeof(buf), 0);
+	return msgsnd(msgid, &(buf.mtype), sizeof(buf.mtext), 0);
 }
 
 int retrieve_msg_queue(int msgq, long type, MsgBuf* msgp){
-	return msgrcv(msgq, msgp, sizeof(MsgBuf), type, 0);
+	return msgrcv(msgq, msgp, sizeof(msgp->mtext), type, 0);
 }
 
 
@@ -36,7 +37,7 @@ void udp_listener(int msgid){
 	int sock = socket(AF_INET,SOCK_DGRAM,0);
 	struct sockaddr_in recvaddr;
 	recvaddr.sin_family = AF_INET;
-	recvaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	recvaddr.sin_addr.s_addr = INADDR_ANY;
 	recvaddr.sin_port = htons(UDP_PORT);
 	bind(sock,(struct sockaddr *)&recvaddr,sizeof(recvaddr));
 
@@ -49,6 +50,7 @@ void udp_listener(int msgid){
 			break;		
 		}
 		// put in queue
+		printf("mtext: %s\n", buf.mtext);
 		put_in_msg_queue(msgid, buf);
 	}
 	close(sock);
@@ -65,7 +67,7 @@ void create_tcp(int msgq){
 
 	sock = socket(AF_INET,SOCK_STREAM,0);
 	listaddr.sin_family = AF_INET;
-	listaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	listaddr.sin_addr.s_addr = INADDR_ANY;
 	listaddr.sin_port = htons(TCP_PORT);
 	bind(sock,(struct sockaddr *)&listaddr,sizeof(listaddr));
 	listen(sock,5);
@@ -94,7 +96,10 @@ int send_msg_to_udp(MsgBuf msg){
 	int p;
 	extract(msg.mtype, &(sendaddr.sin_addr.s_addr), &p);
 	sendaddr.sin_port = htons(UDP_PORT);
-	return sendto(sock, &msg, sizeof(msg), 0, (struct sockaddr *)&sendaddr,sizeof(sendaddr));
+	msg.mtype = (long)p;
+	
+	
+	return sendto(sock, &(msg.mtype), sizeof(msg), 0, (struct sockaddr *)&sendaddr,sizeof(sendaddr));
 }
 
 //tcp single child connection handler
@@ -120,10 +125,11 @@ void handle_tcp(int connfd, int msgq){
 				// check if msg is there
 				type = tc.msg.mtype;
 				t = retrieve_msg_queue(msgq, type, &msg);
+			
 				if( t < 0 ){
 					die("retrieve_msg_queue >> msgrcv() failed");
 				}
-				send(connfd,&msg,sizeof(msg), 0);
+				send(connfd,&(msg.mtype),sizeof(msg), 0);
 				break;
 			default:
 				printf("wrong action type\n");

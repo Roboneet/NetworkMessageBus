@@ -4,22 +4,18 @@ enum states{SEND=1, RCV, PRINT_DETAILS, SHOW_MENU, QUIT, WAIT};
 
 void print_banner();
 
-int main(){
+int main(int argc, char* argv[]){
+	
 	print_banner();
 	nmb_t nmbid = msgget_nmb();
 
 	enum states state = SHOW_MENU;
-	char ip[INET_ADDRSTRLEN], port[10], text[100];
+	char ip[INET_ADDRSTRLEN], port[10], text[LENGTH];
 	struct msgbuf msg;
 	int type;
 
-	long my_type = get_my_mtype(nmbid);
-	uint32_t my_ip_;
-	char my_ip[INET_ADDRSTRLEN];
 	int my_port;
-	extract(my_type, &my_ip_, &my_port);
-	ip_to_string(my_ip_, my_ip);
-	printf("My IP: %s\n", my_ip);
+	get_my_port(nmbid, &my_port);
 	printf("My Port: %d\n", my_port);
 
 
@@ -41,9 +37,9 @@ int main(){
 
 				printf("Enter Port:\n");
 				scanf("%s", port);
-				
+				fgetc(stdin);
 				printf("Enter message:\n");
-				scanf("%s", text);
+				fgets(text, sizeof(text), stdin);
 				msg.mtype = get_mtype(ip, atoi(port));
 				strcpy(msg.mtext, text);
 				printf("Sending message...\n");
@@ -55,7 +51,7 @@ int main(){
 				break;
 			case RCV:
 				printf("Reading a message...\n");
-				if(msgrcv_nmb(nmbid, &msg, sizeof(msg), get_my_mtype(nmbid), 0) < 0){
+				if(msgrcv_nmb(nmbid, &msg, sizeof(msg), (long)my_port, 0) < 0){
 					die("msgsnd_nmb() failed...");
 				}
 				printf("Here you go:\n");
@@ -63,7 +59,7 @@ int main(){
 				state = SHOW_MENU;
 				break;
 			case PRINT_DETAILS:
-				printf("My IP: %s\n", my_ip);
+				
 				printf("My Port: %d\n", my_port);
 				state = SHOW_MENU;
 			case WAIT:
@@ -71,7 +67,7 @@ int main(){
 				break;
 			case QUIT:
 				msgrem_nmb(nmbid);
-				printf("Bye Bye...");
+				printf("Bye Bye...\n");
 				exit(0);
 			default:
 				printf("Bad choice, try again...\n");

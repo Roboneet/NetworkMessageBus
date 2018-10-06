@@ -7,7 +7,9 @@ void die(char* str){
 
 MsgBuf dummyMsg(nmb_t nmbid){
     MsgBuf msg;
-    msg.mtype = get_my_mtype(nmbid);
+    int p;
+    get_my_port(nmbid, &p);
+    msg.mtype = (long)p;
     return msg;
 }
 
@@ -25,7 +27,7 @@ nmb_t msgget_nmb(){
     struct sockaddr_in servAddr;
     memset(&servAddr, 0, sizeof(servAddr));
     servAddr.sin_family  = AF_INET;
-    servAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    servAddr.sin_addr.s_addr = INADDR_ANY;
     servAddr.sin_port        = htons(TCP_PORT); 
     if (connect(sock, (struct sockaddr *) &servAddr,
     	sizeof(servAddr)) < 0)
@@ -47,11 +49,10 @@ ssize_t msgrcv_nmb(nmb_t nmbid, MsgBuf* msgp,
     
     send(nmbid, &tc, sizeof(tc), 0);
     
-    int t = recv(nmbid, &tc, sizeof(tc), 0);
+    int t = recv(nmbid, msgp, msgsz, 0);
     if(t < 0 )die("recv() failed");
     
-    *msgp = tc.msg;
-    return sizeof(tc.msg);
+    return sizeof(*msgp);
 }
 
 int msgrem_nmb(nmb_t nmbid){
@@ -67,24 +68,23 @@ void printbits(long i){
     printf("\n");
 }
 
-long get_my_mtype(int nmbid){
-    struct sockaddr_in me;
-    unsigned int len = sizeof(me);
-    getsockname(nmbid, (struct sockaddr*)&me, &len);
-    long l = (long)me.sin_addr.s_addr;
-    long type = l << 16 | (long)me.sin_port;
-    return type;
-}
-
 void extract(long type, uint32_t* ip, int* port){
     *ip = (uint32_t)(type >> 16);
     *port = type & 0xffff;
 }
 
 long get_mtype(char* ip, int port){
-    return (long)(inet_addr(ip)) << 16 | (long)port;
+    return ((long)(inet_addr(ip)) << 16) | (long)port;
 }
 
 void ip_to_string(uint32_t addr, char* str){
     inet_ntop(AF_INET, &(addr), str, INET_ADDRSTRLEN);
+}
+
+void get_my_port(nmb_t nmbid, int* p){
+    struct sockaddr_in me,temp;
+    char address[INET_ADDRSTRLEN];
+    unsigned int len = sizeof(me);
+    getsockname(nmbid, (struct sockaddr*)&me, &len);
+    *p = me.sin_port;
 }

@@ -18,9 +18,11 @@
 #define MSGSND 1
 #define MSGRCV 2
 
+#define LENGTH 100
+
 struct msgbuf {
     long mtype;    
-    char mtext[100];  
+    char mtext[LENGTH];  
 };
 
 typedef struct msgbuf MsgBuf;
@@ -42,10 +44,9 @@ int msgrem_nmb(nmb_t nmbid);
 
 void die(char* str);
 MsgBuf dummyMsg();
-long get_my_mtype(int nmbid);
 void ip_to_string(uint32_t addr, char* str);
 long get_mtype(char* ip, int port);
 void extract(long type, uint32_t* ip, int* port);
-long get_my_mtype(int nmbid);
+void get_my_port(nmb_t nmbid, int* p);
 
 #endif
